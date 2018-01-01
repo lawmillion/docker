@@ -10,7 +10,7 @@ RUN apk add --no-cache \
     git \
     zip \
     unzip \
-    # supervisor \
+    supervisor \
     nginx \
     && docker-php-ext-install opcache iconv pdo pdo_mysql bcmath \
     && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
@@ -28,7 +28,7 @@ RUN sed -i 's/user = www-data/user = root/g' /usr/local/etc/php-fpm.d/www.conf\
     'ln -sf /dev/stdout /var/log/nginx/access.log\n'\
     'ln -sf /dev/stderr /var/log/nginx/error.log\n'\
     'nginx -g "daemon off;"'\
-    # 'exec supervisord -n -c /etc/supervisord.conf'
+    'exec supervisord -n -c /etc/supervisord.conf'\
     > /usr/sbin/x_init\
     && chmod a+x /usr/sbin/x_init
 WORKDIR /var/www/laravel/
