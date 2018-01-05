@@ -1,13 +1,16 @@
-FROM arm64v8/debian:jessie-slim
+FROM arm32v7/debian:jessie-slim
 
 # add our user and group first to make sure their IDs get assigned consistently, regardless of whatever dependencies get added
 RUN groupadd -r mysql && useradd -r -g mysql mysql
-
+# RUN ping -c 1 github.com
+# RUN ping -c 1 ha.pool.sks-keyservers.net
+# RUN ip route
+# COPY gosu-amd64 /usr/local/bin/gosu
+# COPY gosu-amd64.asc /usr/local/bin/gosu.asc
 ENV GOSU_VERSION 1.10
-RUN apt-get update && apt-get install -y --no-install-recommends apt-utils
 RUN set -ex; \
     \
-    fetchDeps='ca-certificates wget'; \
+    fetchDeps='ca-certificates'; \
     apt-get update; \
     apt-get install -y --no-install-recommends $fetchDeps; \
     rm -rf /var/lib/apt/lists/*; \
@@ -49,7 +52,7 @@ RUN set -ex; \
     apt-key list > /dev/null
 
 ENV MYSQL_MAJOR 5.7
-ENV MYSQL_VERSION 5.7.20-1debian8
+ENV MYSQL_VERSION 5.7.20-1
 
 RUN echo "deb http://repo.mysql.com/apt/debian/ jessie mysql-${MYSQL_MAJOR}" > /etc/apt/sources.list.d/mysql.list
 
