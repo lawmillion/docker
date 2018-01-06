@@ -86,7 +86,7 @@
 # CMD ["mysqld"]
 # # CMD ["/bin/sh","-c","while true;do echo hello docker;sleep 1;done"]
 FROM alpine:latest
-RUN groupadd -r mysql && useradd -r -g mysql mysql
+RUN addgroup -r mysql && useradd -r -g mysql mysql
 RUN mkdir /docker-entrypoint-initdb.d
 RUN apk add --no-cache mysql mysql-client \
     && sed -ri 's/^user\s/#&/' /etc/mysql/my.cnf /etc/mysql/conf.d/* \
