@@ -88,7 +88,7 @@
 FROM alpine:latest
 RUN addgroup mysql && adduser -S -G mysql mysql
 RUN mkdir /docker-entrypoint-initdb.d
-RUN apk add --no-cache mariadb-server \
+RUN apk add --no-cache mariadb mariadb-client \
     # { \
     #     echo "mariadb-server-$MARIADB_MAJOR" mysql-server/root_password password 'unused'; \
     #     echo "mariadb-server-$MARIADB_MAJOR" mysql-server/root_password_again password 'unused'; \
