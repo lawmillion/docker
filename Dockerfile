@@ -85,7 +85,7 @@
 # EXPOSE 3306
 # CMD ["mysqld"]
 # # CMD ["/bin/sh","-c","while true;do echo hello docker;sleep 1;done"]
-FROM arm64v8/alpine:latest
+FROM alpine:latest
 RUN apk add --no-cache mysql-client
 EXPOSE 3306
 ENTRYPOINT ["mysql"]
