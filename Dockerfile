@@ -88,4 +88,4 @@
 FROM alpine:latest
 RUN apk add --no-cache mysql mysql-client
 EXPOSE 3306
-ENTRYPOINT ["mysql"]
+ENTRYPOINT ["mysqld"]
