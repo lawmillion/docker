@@ -88,7 +88,11 @@
 FROM alpine:latest
 RUN addgroup mysql && adduser -S -G mysql mysql
 RUN mkdir /docker-entrypoint-initdb.d
-RUN apk add --no-cache mysql mysql-client \
+RUN { \
+    echo "mariadb-server-$MARIADB_MAJOR" mysql-server/root_password password 'unused'; \
+    echo "mariadb-server-$MARIADB_MAJOR" mysql-server/root_password_again password 'unused'; \
+    } | debconf-set-selections \
+    && apk add --no-cache mariadb-server \
     && sed -ri 's/^user\s/#&/' /etc/mysql/my.cnf /etc/mysql/conf.d/* \
     # purge and re-create /var/lib/mysql with appropriate ownership
     && rm -rf /var/lib/mysql && mkdir -p /var/lib/mysql /var/run/mysqld \
