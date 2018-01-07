@@ -48,6 +48,7 @@ RUN rm -rf ~/mysql-download
 VOLUME /var/lib/mysql
 
 COPY docker-entrypoint.sh /
+RUN chmod -R 777 /docker-entrypoint.sh
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
 EXPOSE 3306
