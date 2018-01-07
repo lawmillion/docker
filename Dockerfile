@@ -4,17 +4,19 @@ RUN groupadd -r mysql && useradd -r -g mysql mysql
 
 ENV MYSQL_VERSION 5.7.20
 
-# ENV GOSU_VERSION 1.7
+ENV GOSU_VERSION 1.7
+COPY gosu /usr/local/bin/
+COPY gosu.asc /usr/local/bin/
 RUN set -x \
-    && apt-get update && apt-get install -y --no-install-recommends ca-certificates wget gosu && rm -rf /var/lib/apt/lists/* \
-    #     && wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$(dpkg --print-architecture)" \
-    #     && wget -O /usr/local/bin/gosu.asc "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$(dpkg --print-architecture).asc" \
-    #     && export GNUPGHOME="$(mktemp -d)" \
-    #     # && gpg --keyserver ha.pool.sks-keyservers.net --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4 \
-    #     # && gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu \
-    #     && rm -r "$GNUPGHOME" /usr/local/bin/gosu.asc \
-    #     && chmod +x /usr/local/bin/gosu \
-    && gosu nobody true
+    && apt-get update && apt-get install -y --no-install-recommends ca-certificates wget gosu gnupg dirmngr && rm -rf /var/lib/apt/lists/* 
+# && wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$(dpkg --print-architecture)" \
+# && wget -O /usr/local/bin/gosu.asc "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$(dpkg --print-architecture).asc" \
+# RUN export GNUPGHOME="$(mktemp -d)" \
+#     && gpg --keyserver ha.pool.sks-keyservers.net --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4 \
+#     && gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu \
+#     # && rm -r "$GNUPGHOME" /usr/local/bin/gosu.asc \
+#     && chmod +x /usr/local/bin/gosu \
+#     && gosu nobody true
 #     && apt-get purge -y --auto-remove ca-certificates wget
 
 RUN mkdir /docker-entrypoint-initdb.d
@@ -32,14 +34,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     perl \
     && rm -rf /var/lib/apt/lists/*
 
-# RUN set -ex; \
-#     # gpg: key 5072E1F5: public key "MySQL Release Engineering <mysql-build@oss.oracle.com>" imported
-#     key='A4A9406876FCBD3C456770C88C718D3B5072E1F5'; \
-#     export GNUPGHOME="$(mktemp -d)"; \
-#     gpg --keyserver ha.pool.sks-keyservers.net --recv-keys "$key"; \
-#     gpg --export "$key" > /etc/apt/trusted.gpg.d/mysql.gpg; \
-#     rm -r "$GNUPGHOME"; \
-#     apt-key list > /dev/null
+RUN set -ex; \
+    # gpg: key 5072E1F5: public key "MySQL Release Engineering <mysql-build@oss.oracle.com>" imported
+    key='A4A9406876FCBD3C456770C88C718D3B5072E1F5'; \
+    export GNUPGHOME="$(mktemp -d)"; \
+    gpg --keyserver ha.pool.sks-keyservers.net --recv-keys "$key"; \
+    gpg --export "$key" > /etc/apt/trusted.gpg.d/mysql.gpg; \
+    rm -r "$GNUPGHOME"; \
+    apt-key list > /dev/null
 # RUN set -x \
 #     && apt-get update && apt-get install -y --no-install-recommends wget && rm -rf /var/lib/apt/lists/* 
 
@@ -77,16 +79,24 @@ RUN { \
     echo mysql-server mysql-server/re-root-pass password ''; \
     echo mysql-server mysql-server/remove-test-db select false; \
     } | debconf-set-selections \
-    && rm -rf /var/lib/mysql && mkdir -p /var/lib/mysql && chown -R mysql:mysql /var/lib/mysql
+    && rm -rf /var/lib/mysql && mkdir -p /var/lib/mysql /var/run/mysqld \
+    && chown -R mysql:mysql /var/lib/mysql /var/run/mysqld \
+    # ensure that /var/run/mysqld (used for socket and lock files) is writable regardless of the UID our mysqld instance ends up having at runtime
+    && chmod 777 /var/run/mysqld \
+    # comment out a few problematic configuration values
+    && find /etc/mysql/ -name '*.cnf' -print0 \
+    | xargs -0 grep -lZE '^(bind-address|log)' \
+    | xargs -rt -0 sed -Ei 's/^(bind-address|log)/#&/' \
+    # don't reverse lookup hostnames, they are usually another container
+    && echo '[mysqld]\nskip-host-cache\nskip-name-resolve' > /etc/mysql/conf.d/docker.cnf
 
 RUN sed -Ei 's/^(bind-address|log)/#&/' /etc/mysql/my.cnf
 RUN rm -rf ~/mysql-download
 VOLUME /var/lib/mysql
 
-COPY docker-entrypoint.sh /
-RUN chmod -R 777 /docker-entrypoint.sh
-ENTRYPOINT ["/docker-entrypoint.sh"]
-
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN ln -s usr/local/bin/docker-entrypoint.sh /entrypoint.sh # backwards compat
+ENTRYPOINT ["docker-entrypoint.sh"]
 EXPOSE 3306
 CMD ["mysqld"]
 # WORKDIR /app
